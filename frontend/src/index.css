@@ -1,0 +1,31 @@
+/* src/index.css */
+@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+:root {
+  --ink: #14213D;
+  --ink-soft: #3A4257;
+  --paper: #FAFAF7;
+  --paper-raised: #FFFFFF;
+  --slate: #6B7280;
+  --line: #E3E0D6;
+  --brass: #9C7A3C;
+  --brass-soft: #F2ECDD;
+  --risk-high: #A13A2C;
+  --risk-med: #B08034;
+  --risk-low: #4B7A5A;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-serif-doc {
+  font-family: Georgia, Cambria, "Times New Roman", serif;
+}
