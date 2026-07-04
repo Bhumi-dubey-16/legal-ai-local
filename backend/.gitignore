@@ -19,10 +19,10 @@ backend/models/
 
 # OS
 .DS_Store
-Thumbs.db
-# Ignore local testing PDFs and datasets
-backend/*.pdf# Backend Exclusions
-backend/chroma_db/
-backend/*.sqlite3
-backend/uploads/*
-!backend/uploads/.gitkeep
+Thumbs.db# Backend - Local Vector Databases
+chroma_db/
+*.sqlite3
+
+# Backend - User Uploads / Test files
+uploads/*
+!uploads/.gitkeep

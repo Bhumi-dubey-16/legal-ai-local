@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { sendChatMessage } from '../../api/client';
+import { askQuestion } from '../../api/client';
 
 export default function ChatPanel({ docIds }) {
   const [messages, setMessages] = useState([]);
@@ -10,6 +10,8 @@ export default function ChatPanel({ docIds }) {
   useEffect(() => {
     setMessages([]);
   }, [docIds]);
+
+
 
   const handleSend = async (e) => {
     e.preventDefault();
@@ -22,8 +24,8 @@ export default function ChatPanel({ docIds }) {
     setLoading(true);
 
     try {
-      const response = await sendChatMessage(updatedMessages, docIds);
-      setMessages([...updatedMessages, { role: 'assistant', content: response.message }]);
+      const result = await askQuestion(input, docIds);
+      setMessages([...updatedMessages, { role: 'assistant', content: result.answer, citations: result.citations }]);
     } catch (err) {
       console.error(err);
     } finally {

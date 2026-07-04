@@ -12,14 +12,14 @@ export default function RiskViewer({ docIds }) {
   const [risks, setRisks] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // If selection context lists alter, reset results to force manual click requirement
+  
   useEffect(() => {
     setRisks(null);
   }, [docIds]);
 
   const runAnalysis = async () => {
     setLoading(true);
-    // Evaluates files passed through from selection context
+    
     const result = await analyzeContract(docIds[0]); 
     setRisks(result.risks);
     setLoading(false);
