@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
+import { Loader2, RefreshCw } from 'lucide-react';
 import { askQuestion } from '../../api/client';
 import { saveChatSession } from '../../utils/historyStore';
 
 export default function ChatPanel({ docIds, loadedSession }) {
-  const [sessionId] = useState(() => loadedSession?.id || `chat-${Date.now()}`);
+  const [sessionId, setSessionId] = useState(() => loadedSession?.id || `chat-${Date.now()}`);
   const [messages, setMessages] = useState(loadedSession?.messages || []);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -18,6 +19,12 @@ export default function ChatPanel({ docIds, loadedSession }) {
       saveChatSession({ id: sessionId, docIds, messages, timestamp: Date.now() });
     }
   }, [messages]);
+
+  const handleNewChat = () => {
+    setMessages([]);
+    setInput('');
+    setSessionId(`chat-${Date.now()}`);
+  };
 
   const handleSend = async (e) => {
     e.preventDefault();
@@ -41,6 +48,19 @@ export default function ChatPanel({ docIds, loadedSession }) {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-paper">
+      <div className="flex items-center justify-between px-6 pt-4">
+        <p className="text-[11px] tracking-widest text-slate uppercase">Ask Documents</p>
+        {messages.length > 0 && (
+          <button
+            onClick={handleNewChat}
+            title="Start new chat"
+            className="flex items-center gap-1.5 text-xs text-slate hover:text-ink transition-colors"
+          >
+            <RefreshCw size={13} />
+            New chat
+          </button>
+        )}
+      </div>
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
         {messages.length === 0 && (
           <div className="h-full flex flex-col items-center justify-center text-center p-8">
@@ -65,7 +85,10 @@ export default function ChatPanel({ docIds, loadedSession }) {
           </div>
         ))}
         {loading && (
-          <div className="text-xs text-slate italic animate-pulse">Running local query execution...</div>
+          <div className="flex items-center gap-2 text-xs text-slate italic">
+            <Loader2 size={13} className="animate-spin" />
+            Running local query on-device… this can take a moment on a laptop
+          </div>
         )}
       </div>
       <form onSubmit={handleSend} className="p-4 border-t border-line bg-paper">

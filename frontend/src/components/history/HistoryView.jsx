@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Download, Trash2, MessageSquare, FileText } from 'lucide-react';
+import { Download, Trash2, MessageSquare, FileText, RefreshCw } from 'lucide-react';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
 import { saveAs } from 'file-saver';
 import { getChatHistory, deleteChatSession, getDraftHistory, deleteDraft } from '../../utils/historyStore';
@@ -8,10 +8,17 @@ export default function HistoryView({ onOpenChat, onOpenDraft }) {
   const [tab, setTab] = useState('chats');
   const [chats, setChats] = useState([]);
   const [drafts, setDrafts] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
 
   const refresh = () => {
     setChats(getChatHistory());
     setDrafts(getDraftHistory());
+  };
+
+  const handleRefreshClick = () => {
+    setRefreshing(true);
+    refresh();
+    setTimeout(() => setRefreshing(false), 300); // brief visual feedback
   };
 
   useEffect(() => { refresh(); }, []);
@@ -27,7 +34,16 @@ export default function HistoryView({ onOpenChat, onOpenDraft }) {
 
   return (
     <div className="p-8 max-w-2xl">
-      <p className="text-[11px] tracking-widest text-slate uppercase mb-1">History</p>
+      <div className="flex items-center justify-between mb-1">
+        <p className="text-[11px] tracking-widest text-slate uppercase">History</p>
+        <button
+          onClick={handleRefreshClick}
+          title="Refresh history"
+          className="text-slate hover:text-ink transition-colors"
+        >
+          <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
+        </button>
+      </div>
       <h2 className="font-serif-doc text-xl text-ink mb-4">Past sessions & drafts</h2>
 
       <div className="flex gap-4 mb-5 border-b border-line">

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Download } from 'lucide-react';
+import { Download, Loader2, RefreshCw } from 'lucide-react';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
 import { saveAs } from 'file-saver';
 import { generateDraft } from '../../api/client';
@@ -73,9 +73,24 @@ export default function DraftAssistant({ docIds, loadedDraft }) {
       </div>
 
       <div className="flex-1 p-8 overflow-y-auto">
-        {draft ? (
+        {loading ? (
+          <div className="h-full flex flex-col items-center justify-center text-center">
+            <Loader2 size={22} className="animate-spin text-slate mb-3" />
+            <p className="text-sm text-slate max-w-xs">
+              Drafting locally on your machine… this may take a minute depending on document length.
+            </p>
+          </div>
+        ) : draft ? (
           <>
-            <div className="flex justify-end mb-4">
+            <div className="flex justify-end gap-2 mb-4">
+              <button
+                onClick={handleGenerate}
+                title="Regenerate draft"
+                className="flex items-center gap-1.5 text-sm px-3 py-1.5 border border-line rounded-md text-ink-soft hover:border-brass hover:text-ink transition-colors"
+              >
+                <RefreshCw size={14} />
+                Regenerate
+              </button>
               <button
                 onClick={handleExport}
                 disabled={exporting}

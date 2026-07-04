@@ -8,3 +8,4 @@ sentence-transformers
 cryptography
 requests
 python-multipart
+ollama

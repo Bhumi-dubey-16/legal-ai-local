@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Loader2, RefreshCw } from 'lucide-react';
 import { buildChronology } from '../../api/client';
 
 export default function ChronologyView({ docIds }) {
@@ -18,9 +19,21 @@ export default function ChronologyView({ docIds }) {
 
   return (
     <div className="p-8 max-w-2xl h-full overflow-y-auto">
-      <p className="text-[11px] tracking-widest text-slate uppercase mb-1">Case Chronology</p>
+      <div className="flex items-center justify-between mb-1">
+        <p className="text-[11px] tracking-widest text-slate uppercase">Case Chronology</p>
+        {events && (
+          <button
+            onClick={runBuild}
+            disabled={loading}
+            title="Rebuild timeline"
+            className="text-slate hover:text-ink transition-colors disabled:opacity-40"
+          >
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+          </button>
+        )}
+      </div>
       <h2 className="font-serif-doc text-xl text-ink mb-4">Chronological Extraction</h2>
-      
+
       <div className="mb-6 p-4 border border-line rounded bg-line/10 space-y-3">
         <p className="text-xs text-slate">
           Extract structural timeline elements over <span className="font-semibold text-ink">{docIds.length} target file context sheets</span>.
@@ -34,7 +47,16 @@ export default function ChronologyView({ docIds }) {
         </button>
       </div>
 
-      {events && (
+      {loading && (
+        <div className="flex flex-col items-center justify-center py-10 text-center">
+          <Loader2 size={22} className="animate-spin text-slate mb-3" />
+          <p className="text-sm text-slate max-w-xs">
+            Reading through documents and building the timeline locally… this can take a minute for longer files.
+          </p>
+        </div>
+      )}
+
+      {!loading && events && (
         <div className="relative pl-6 mt-4 animate-fadeIn">
           <div className="absolute left-[5px] top-1 bottom-1 w-px bg-line" />
           <div className="space-y-6">
