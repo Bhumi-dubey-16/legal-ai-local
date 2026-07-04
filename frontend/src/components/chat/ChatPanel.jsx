@@ -1,17 +1,23 @@
 import { useState, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { askQuestion } from '../../api/client';
+import { saveChatSession } from '../../utils/historyStore';
 
-export default function ChatPanel({ docIds }) {
-  const [messages, setMessages] = useState([]);
+export default function ChatPanel({ docIds, loadedSession }) {
+  const [sessionId] = useState(() => loadedSession?.id || `chat-${Date.now()}`);
+  const [messages, setMessages] = useState(loadedSession?.messages || []);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Clear messages if active files scope changes to keep query boundaries clean
   useEffect(() => {
-    setMessages([]);
+    if (!loadedSession) setMessages([]);
   }, [docIds]);
 
-
+  useEffect(() => {
+    if (messages.length > 0) {
+      saveChatSession({ id: sessionId, docIds, messages, timestamp: Date.now() });
+    }
+  }, [messages]);
 
   const handleSend = async (e) => {
     e.preventDefault();
@@ -48,7 +54,13 @@ export default function ChatPanel({ docIds }) {
             <div className={`max-w-xl text-sm p-3.5 rounded-lg leading-relaxed ${
               m.role === 'user' ? 'bg-line/40 text-ink' : 'bg-brass-soft/30 text-ink'
             }`}>
-              {m.content}
+              {m.role === 'assistant' ? (
+                <div className="prose prose-sm max-w-none prose-p:my-2 prose-ul:my-2 prose-ul:pl-4 prose-li:my-1 prose-strong:text-ink">
+                  <ReactMarkdown>{m.content}</ReactMarkdown>
+                </div>
+              ) : (
+                m.content
+              )}
             </div>
           </div>
         ))}

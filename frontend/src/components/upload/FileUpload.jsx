@@ -9,6 +9,7 @@ export default function FileUpload({ onUploaded }) {
 
   
 
+
   const handleFileProcess = async (file) => {
     if (!file) return;
     
@@ -41,7 +42,7 @@ export default function FileUpload({ onUploaded }) {
       if (onUploaded) {
         onUploaded({
   doc_id: data.doc_id,
-  name: data.name   // 
+  name: data.filename
 });
       }
     } catch (err) {

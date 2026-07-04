@@ -137,14 +137,20 @@ def ask_local_ai(request: QueryRequest):
             }
 
         system_prompt = f"""
-        You are a precise, helpful AI assistant. You must answer the user's question using ONLY the verified document context provided below.
-        If the context does not contain the answer, politely state that you cannot find it in the provided documents. Do not make up information.
+You are a precise legal research assistant. Answer the user's question using ONLY the verified document context below.
 
-        ---
-        VERIFIED CONTEXT FROM DOCUMENTS:
-        {context_text}
-        ---
-        """
+Formatting rules — follow these strictly:
+- Never write one long paragraph. Break your answer into short points.
+- Use markdown bullet points (lines starting with "- ") for lists of features, clauses, or items.
+- Use markdown bold (**word**) for key terms, names, or important values.
+- Use a short intro sentence before the bullet list, not folded into it.
+- If the context does not contain the answer, say so plainly in one sentence.
+
+---
+VERIFIED CONTEXT FROM DOCUMENTS:
+{context_text}
+---
+"""
 
         response = ollama.generate(
             model="llama3.2:3b",

@@ -3,10 +3,11 @@ import { Download } from 'lucide-react';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
 import { saveAs } from 'file-saver';
 import { generateDraft } from '../../api/client';
+import { saveDraft } from '../../utils/historyStore';
 
-export default function DraftAssistant({ docIds }) {
-  const [instruction, setInstruction] = useState('');
-  const [draft, setDraft] = useState('');
+export default function DraftAssistant({ docIds, loadedDraft }) {
+  const [instruction, setInstruction] = useState(loadedDraft?.instruction || '');
+  const [draft, setDraft] = useState(loadedDraft?.draftText || '');
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
 
@@ -15,29 +16,31 @@ export default function DraftAssistant({ docIds }) {
     setLoading(true);
     const result = await generateDraft(instruction, docIds);
     setDraft(result.draft_text);
+
+    saveDraft({
+      id: `draft-${Date.now()}`,
+      instruction,
+      draftText: result.draft_text,
+      timestamp: Date.now(),
+    });
+
     setLoading(false);
   };
 
   const handleExport = async () => {
     setExporting(true);
     try {
-      
       const paragraphs = draft
         .split('\n')
         .map((line) =>
           new Paragraph({
-            children: [new TextRun({ text: line, size: 24 })], 
+            children: [new TextRun({ text: line, size: 24 })],
             spacing: { after: 200 },
           })
         );
 
       const doc = new Document({
-        sections: [
-          {
-            properties: {},
-            children: paragraphs,
-          },
-        ],
+        sections: [{ properties: {}, children: paragraphs }],
       });
 
       const blob = await Packer.toBlob(doc);
