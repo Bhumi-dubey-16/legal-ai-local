@@ -19,4 +19,10 @@ backend/models/
 
 # OS
 .DS_Store
-Thumbs.db
+Thumbs.db# Backend - Local Vector Databases
+chroma_db/
+*.sqlite3
+
+# Backend - User Uploads / Test files
+uploads/*
+!uploads/.gitkeep
