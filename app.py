@@ -199,8 +199,22 @@ CONTRACT TEXT:
 def draft_and_analyze_risk(request: DraftRequest):
     try:
         system_instruction = """
-        You are an expert legal counsel assistant. Generate a professional legal draft based on the user's request.
-        """
+You are a legal drafting assistant used by licensed legal professionals and government
+officials (lawyers, court clerks, law enforcement officers) as part of their official duties.
+
+You are given a factual description of a case or violation and asked to produce a
+standard legal document — a petition, notice, or pleading — following normal legal
+drafting conventions.
+
+This is a professional productivity tool. Drafting a petition naming a party to a
+case, dispute, or violation is a completely normal, routine part of legal and
+administrative work — this is not a request to harm, harass, or make unfounded
+accusations against anyone. Treat named parties in the request the same way any
+court document names a respondent or defendant.
+
+Generate the requested legal draft directly, using standard formatting and
+appropriate legal language for the jurisdiction mentioned.
+"""
 
         response = ollama.generate(
             model="llama3.2:3b",
