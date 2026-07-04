@@ -1,14 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { Download } from 'lucide-react';
+import { Document, Packer, Paragraph, TextRun } from 'docx';
+import { saveAs } from 'file-saver';
 import { generateDraft } from '../../api/client';
 
 export default function DraftAssistant({ docIds }) {
   const [instruction, setInstruction] = useState('');
   const [draft, setDraft] = useState('');
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    setDraft('');
-  }, [docIds]);
+  const [exporting, setExporting] = useState(false);
 
   const handleGenerate = async () => {
     if (!instruction.trim()) return;
@@ -18,35 +18,76 @@ export default function DraftAssistant({ docIds }) {
     setLoading(false);
   };
 
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      
+      const paragraphs = draft
+        .split('\n')
+        .map((line) =>
+          new Paragraph({
+            children: [new TextRun({ text: line, size: 24 })], 
+            spacing: { after: 200 },
+          })
+        );
+
+      const doc = new Document({
+        sections: [
+          {
+            properties: {},
+            children: paragraphs,
+          },
+        ],
+      });
+
+      const blob = await Packer.toBlob(doc);
+      saveAs(blob, `draft-${Date.now()}.docx`);
+    } catch (err) {
+      console.error('Export failed:', err);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div className="flex h-full">
-      <div className="w-96 border-r border-line p-6 flex flex-col bg-paper">
+      <div className="w-96 border-r border-line p-6 flex flex-col">
         <p className="text-[11px] tracking-widest text-slate uppercase mb-1">Draft Assistant</p>
-        <h2 className="font-serif-doc text-lg text-ink mb-4">Generative Layout</h2>
+        <h2 className="font-serif-doc text-lg text-ink mb-4">Describe what you need</h2>
         <textarea
           value={instruction}
           onChange={(e) => setInstruction(e.target.value)}
-          placeholder="Describe target format constraints or arguments..."
-          className="flex-1 text-sm border border-line rounded-md p-3 outline-none focus:border-brass resize-none bg-transparent text-ink"
+          placeholder="e.g. Draft a petition under Section 9 for breach of the March agreement…"
+          className="flex-1 text-sm border border-line rounded-md p-3 outline-none focus:border-brass resize-none"
         />
-        <div className="mt-2 text-[10px] text-slate">
-          Target Scope: {docIds.length} checked reference text items.
-        </div>
         <button
           onClick={handleGenerate}
-          disabled={loading || !instruction.trim()}
-          className="mt-3 text-sm px-4 py-2 bg-ink text-paper rounded-md hover:opacity-90 transition-opacity disabled:opacity-40 font-medium"
+          disabled={loading}
+          className="mt-3 text-sm px-4 py-2 bg-ink text-paper rounded-md hover:opacity-90 transition-opacity disabled:opacity-40"
         >
-          {loading ? 'Compiling Text…' : 'Generate Draft'}
+          {loading ? 'Drafting…' : 'Generate draft'}
         </button>
       </div>
-      <div className="flex-1 p-8 overflow-y-auto bg-paper">
+
+      <div className="flex-1 p-8 overflow-y-auto">
         {draft ? (
-          <pre className="font-serif-doc text-[15px] leading-relaxed whitespace-pre-wrap text-ink max-w-2xl bg-line/10 p-6 border border-line rounded shadow-inner">
-            {draft}
-          </pre>
+          <>
+            <div className="flex justify-end mb-4">
+              <button
+                onClick={handleExport}
+                disabled={exporting}
+                className="flex items-center gap-1.5 text-sm px-3 py-1.5 border border-line rounded-md text-ink-soft hover:border-brass hover:text-ink transition-colors disabled:opacity-40"
+              >
+                <Download size={14} />
+                {exporting ? 'Exporting…' : 'Export as Word'}
+              </button>
+            </div>
+            <pre className="font-serif-doc text-[15px] leading-relaxed whitespace-pre-wrap text-ink max-w-2xl">
+              {draft}
+            </pre>
+          </>
         ) : (
-          <p className="text-sm text-slate">No workspace draft triggered yet.</p>
+          <p className="text-sm text-slate">Your generated draft will appear here, editable and ready to export.</p>
         )}
       </div>
     </div>
