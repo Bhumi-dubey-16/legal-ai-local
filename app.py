@@ -25,6 +25,12 @@ ENCRYPTION_KEY = Fernet.generate_key()
 fernet = Fernet(ENCRYPTION_KEY)
 
 
+def detect_language(text):
+    if re.search(r'[\u0900-\u097F]', text):
+        return "Hindi"
+    return "English"
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("Initializing local AI models and ChromaDB...")
@@ -153,15 +159,19 @@ def ask_local_ai(request: QueryRequest):
                 "citations": []
             }
 
+        target_language = detect_language(request.question)
+
         system_prompt = f"""
 You are a precise legal research assistant. Answer the user's question using ONLY the verified document context below.
+
+You must respond ONLY in {target_language}. Do not use any other language under any circumstances, even if the document context is in a different language.
 
 Formatting rules — follow these strictly:
 - Never write one long paragraph. Break your answer into short points.
 - Use markdown bullet points (lines starting with "- ") for lists of features, clauses, or items.
 - Use markdown bold (**word**) for key terms, names, or important values.
 - Use a short intro sentence before the bullet list, not folded into it.
-- If the context does not contain the answer, say so plainly in one sentence.
+- If the context does not contain the answer, say so plainly in one sentence, in {target_language}.
 
 ---
 VERIFIED CONTEXT FROM DOCUMENTS:
@@ -170,7 +180,7 @@ VERIFIED CONTEXT FROM DOCUMENTS:
 """
 
         response = ollama.generate(
-            model="mistral",
+            model="qwen2.5:7b",
             prompt=f"{system_prompt}\n\nUser Question: {request.question}\nYour precise answer:",
             options={"temperature": 0.1}
         )
@@ -205,7 +215,7 @@ CONTRACT TEXT:
 {context_text}"""
 
         response = ollama.generate(
-            model="mistral",
+            model="qwen2.5:7b",
             prompt=prompt,
             options={"temperature": 0.1}
         )
@@ -246,7 +256,7 @@ or unnecessary disclaimers — produce the document.
 """
 
         response = ollama.generate(
-            model="mistral",
+            model="qwen2.5:7b",
             prompt=f"{system_instruction}\n\nUser Request: {request.prompt}\n\nLegal Draft:",
             options={"temperature": 0.3}
         )
@@ -288,7 +298,7 @@ TEXT:
 """
 
         response = ollama.generate(
-            model="mistral",
+            model="qwen2.5:7b",
             prompt=prompt,
             options={"temperature": 0.1}
         )

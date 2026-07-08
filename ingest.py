@@ -108,7 +108,7 @@ if __name__ == "__main__":
     extracted_chunks = extract_and_chunk_pdf("test.pdf")
     save_chunks_to_chroma(extracted_chunks, test_collection, doc_id="test001", filename="test.pdf")
 
-
+    
 
 
 def extract_text_from_docx(docx_path):
