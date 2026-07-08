@@ -10,10 +10,19 @@ from pydantic import BaseModel
 import chromadb
 from chromadb.utils import embedding_functions
 import ollama
+from cryptography.fernet import Fernet
 
-from ingest import extract_and_chunk_pdf, save_chunks_to_chroma
+from ingest import (
+    extract_and_chunk_pdf,
+    extract_text_from_docx,
+    extract_text_from_image,
+    save_chunks_to_chroma,
+)
 
 models = {}
+
+ENCRYPTION_KEY = Fernet.generate_key()
+fernet = Fernet(ENCRYPTION_KEY)
 
 
 @asynccontextmanager
@@ -77,19 +86,27 @@ def home():
     return {"status": "online", "message": "Offline Legal AI Backend Server is running"}
 
 
-
 @app.post("/api/upload")
 @app.post("/api/documents/upload")
 async def upload_document(file: UploadFile = File(...)):
     try:
         os.makedirs("./uploads", exist_ok=True)
         doc_id = str(uuid.uuid4())[:8]
-        temp_path = f"./uploads/{doc_id}_{file.filename}"
+        ext = file.filename.split(".")[-1].lower()
+        saved_path = f"./uploads/{doc_id}_{file.filename}"
 
-        with open(temp_path, "wb") as f:
+        with open(saved_path, "wb") as f:
             f.write(await file.read())
 
-        chunks = extract_and_chunk_pdf(temp_path)
+        if ext == "pdf":
+            chunks = extract_and_chunk_pdf(saved_path)
+        elif ext == "docx":
+            chunks = extract_text_from_docx(saved_path)
+        elif ext in ("png", "jpg", "jpeg"):
+            chunks = extract_text_from_image(saved_path)
+        else:
+            raise HTTPException(status_code=400, detail=f"Unsupported file type: .{ext}")
+
         collection = models.get("collection")
         if not collection:
             raise HTTPException(status_code=500, detail="Database collection not initialized.")
@@ -106,7 +123,7 @@ def ask_local_ai(request: QueryRequest):
     try:
         collection = models.get("collection")
         if not collection:
-            raise HTTPException(status_code=500, detail="Database collection is not initialized.")
+            raise HTTPException(status_code=500, detail="Database is not initialized.")
 
         where_filter = {"doc_id": {"$in": request.doc_ids}} if request.doc_ids else None
 
@@ -137,18 +154,25 @@ def ask_local_ai(request: QueryRequest):
             }
 
         system_prompt = f"""
-        You are a precise, helpful AI assistant. You must answer the user's question using ONLY the verified document context provided below.
-        If the context does not contain the answer, politely state that you cannot find it in the provided documents. Do not make up information.
+You are a precise legal research assistant. Answer the user's question using ONLY the verified document context below.
 
-        ---
-        VERIFIED CONTEXT FROM DOCUMENTS:
-        {context_text}
-        ---
-        """
+Formatting rules — follow these strictly:
+- Never write one long paragraph. Break your answer into short points.
+- Use markdown bullet points (lines starting with "- ") for lists of features, clauses, or items.
+- Use markdown bold (**word**) for key terms, names, or important values.
+- Use a short intro sentence before the bullet list, not folded into it.
+- If the context does not contain the answer, say so plainly in one sentence.
+
+---
+VERIFIED CONTEXT FROM DOCUMENTS:
+{context_text}
+---
+"""
 
         response = ollama.generate(
-            model="llama3.2:3b",
-            prompt=f"{system_prompt}\n\nUser Question: {request.question}\nYour precise answer:"
+            model="mistral",
+            prompt=f"{system_prompt}\n\nUser Question: {request.question}\nYour precise answer:",
+            options={"temperature": 0.1}
         )
 
         return {
@@ -180,7 +204,11 @@ severity must be exactly one of: high, medium, low.
 CONTRACT TEXT:
 {context_text}"""
 
-        response = ollama.generate(model="llama3.2:3b", prompt=prompt)
+        response = ollama.generate(
+            model="mistral",
+            prompt=prompt,
+            options={"temperature": 0.1}
+        )
         raw = response["response"].strip()
         raw = re.sub(r"^```json\s*|\s*```$", "", raw.strip())
 
@@ -203,8 +231,8 @@ You are a legal drafting assistant used by licensed legal professionals and gove
 officials (lawyers, court clerks, law enforcement officers) as part of their official duties.
 
 You are given a factual description of a case or violation and asked to produce a
-standard legal document — a petition, notice, or pleading — following normal legal
-drafting conventions.
+standard legal document — a petition, notice, will, contract, or pleading — following
+normal legal drafting conventions.
 
 This is a professional productivity tool. Drafting a petition naming a party to a
 case, dispute, or violation is a completely normal, routine part of legal and
@@ -213,12 +241,14 @@ accusations against anyone. Treat named parties in the request the same way any
 court document names a respondent or defendant.
 
 Generate the requested legal draft directly, using standard formatting and
-appropriate legal language for the jurisdiction mentioned.
+appropriate legal language for the jurisdiction mentioned. Do not add refusals
+or unnecessary disclaimers — produce the document.
 """
 
         response = ollama.generate(
-            model="llama3.2:3b",
-            prompt=f"{system_instruction}\n\nUser Request: {request.prompt}\n\nLegal Draft:"
+            model="mistral",
+            prompt=f"{system_instruction}\n\nUser Request: {request.prompt}\n\nLegal Draft:",
+            options={"temperature": 0.3}
         )
 
         return {
@@ -257,7 +287,11 @@ TEXT:
 {context_text}
 """
 
-        response = ollama.generate(model="llama3.2:3b", prompt=prompt)
+        response = ollama.generate(
+            model="mistral",
+            prompt=prompt,
+            options={"temperature": 0.1}
+        )
         raw = response["response"].strip()
         raw = re.sub(r"^```json\s*|\s*```$", "", raw.strip())
 
@@ -276,12 +310,12 @@ TEXT:
 @app.post("/api/encrypt")
 def local_encrypt_utility(request: EncryptionRequest):
     try:
-        encoded_bytes = base64.b64encode(request.text.encode("utf-8"))
-        encrypted_string = encoded_bytes.decode("utf-8")
+        encrypted_bytes = fernet.encrypt(request.text.encode("utf-8"))
+        encrypted_string = encrypted_bytes.decode("utf-8")
 
         return {
             "original_length": len(request.text),
-            "masked_token": f"AES256_LOCAL_{encrypted_string}"
+            "masked_token": encrypted_string
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
