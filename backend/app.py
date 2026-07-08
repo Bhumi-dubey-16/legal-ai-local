@@ -12,12 +12,15 @@ from chromadb.utils import embedding_functions
 import ollama
 from cryptography.fernet import Fernet
 
-from ingest import extract_and_chunk_pdf, save_chunks_to_chroma
+from ingest import (
+    extract_and_chunk_pdf,
+    extract_text_from_docx,
+    extract_text_from_image,
+    save_chunks_to_chroma,
+)
 
 models = {}
 
-# Generates a key once per app run. For real persistence across restarts,
-# this key should be saved to a local file (not committed to git) and reloaded.
 ENCRYPTION_KEY = Fernet.generate_key()
 fernet = Fernet(ENCRYPTION_KEY)
 
@@ -89,12 +92,21 @@ async def upload_document(file: UploadFile = File(...)):
     try:
         os.makedirs("./uploads", exist_ok=True)
         doc_id = str(uuid.uuid4())[:8]
-        temp_path = f"./uploads/{doc_id}_{file.filename}"
+        ext = file.filename.split(".")[-1].lower()
+        saved_path = f"./uploads/{doc_id}_{file.filename}"
 
-        with open(temp_path, "wb") as f:
+        with open(saved_path, "wb") as f:
             f.write(await file.read())
 
-        chunks = extract_and_chunk_pdf(temp_path)
+        if ext == "pdf":
+            chunks = extract_and_chunk_pdf(saved_path)
+        elif ext == "docx":
+            chunks = extract_text_from_docx(saved_path)
+        elif ext in ("png", "jpg", "jpeg"):
+            chunks = extract_text_from_image(saved_path)
+        else:
+            raise HTTPException(status_code=400, detail=f"Unsupported file type: .{ext}")
+
         collection = models.get("collection")
         if not collection:
             raise HTTPException(status_code=500, detail="Database collection not initialized.")

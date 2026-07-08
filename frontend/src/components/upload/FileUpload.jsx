@@ -7,15 +7,12 @@ export default function FileUpload({ onUploaded }) {
   const [error, setError] = useState(null);
   const fileInputRef = useRef(null);
 
-  
-
-
   const handleFileProcess = async (file) => {
     if (!file) return;
-    
-    // Safety check for PDFs
-    if (file.type !== 'application/pdf' && !file.name.endsWith('.pdf')) {
-      setError('Only PDF files are supported in this local offline build.');
+
+    const validExtensions = /\.(pdf|docx|png|jpe?g)$/i;
+    if (!validExtensions.test(file.name)) {
+      setError('Only PDF, DOCX, PNG, and JPG files are supported in this local offline build.');
       return;
     }
 
@@ -26,7 +23,6 @@ export default function FileUpload({ onUploaded }) {
     formData.append('file', file);
 
     try {
-      
       const response = await fetch('http://127.0.0.1:8000/api/upload', {
         method: 'POST',
         body: formData,
@@ -37,13 +33,12 @@ export default function FileUpload({ onUploaded }) {
       }
 
       const data = await response.json();
-      
-      
+
       if (onUploaded) {
         onUploaded({
-  doc_id: data.doc_id,
-  name: data.filename
-});
+          doc_id: data.doc_id,
+          name: data.filename
+        });
       }
     } catch (err) {
       console.error(err);
@@ -77,8 +72,8 @@ export default function FileUpload({ onUploaded }) {
         onDrop={onDrop}
         onClick={() => fileInputRef.current?.click()}
         className={`border border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
-          isDragging 
-            ? 'border-brass bg-brass-soft/20' 
+          isDragging
+            ? 'border-brass bg-brass-soft/20'
             : 'border-line hover:bg-line/20 bg-paper'
         }`}
       >
@@ -87,9 +82,9 @@ export default function FileUpload({ onUploaded }) {
           ref={fileInputRef}
           onChange={(e) => handleFileProcess(e.target.files[0])}
           className="hidden"
-          accept=".pdf"
+          accept=".pdf,.docx,.png,.jpg,.jpeg"
         />
-        
+
         {uploading ? (
           <div className="flex flex-col items-center justify-center space-y-2 py-2">
             <Loader2 size={20} className="text-brass animate-spin" />
@@ -99,7 +94,7 @@ export default function FileUpload({ onUploaded }) {
           <div className="flex flex-col items-center justify-center space-y-1.5 py-1">
             <Upload size={18} className={isDragging ? 'text-brass' : 'text-slate'} />
             <p className="text-xs text-ink font-medium">Click or drag document here</p>
-            <p className="text-[10px] text-slate">PDF format only</p>
+            <p className="text-[10px] text-slate">PDF, DOCX, PNG, JPG</p>
           </div>
         )}
       </div>

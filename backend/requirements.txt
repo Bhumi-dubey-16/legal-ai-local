@@ -9,3 +9,4 @@ cryptography
 requests
 python-multipart
 ollama
+python-docx
