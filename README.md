@@ -1,4 +1,5 @@
 # Legal AI — Offline Legal Document Assistant
+DEMO LINK- https://drive.google.com/drive/folders/1zdOc1D_kUJNmPtKvK4i4seDiBN6oCn4k?usp=sharing
 
 A fully offline AI assistant for legal professionals. Upload case files, contracts, and pleadings — ask questions, generate drafts, flag contract risks, and build case chronologies, all processed locally with zero data leaving the device.
 
